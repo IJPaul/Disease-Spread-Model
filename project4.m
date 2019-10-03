@@ -30,30 +30,30 @@ clc
 
 str_x = 0;
 str_y = 1;
-num_runs = 500;
+num_runs = 1000;
 dead_std_devs = double.empty(length(str_x), 0);
 dead_means = double.empty(length(str_x), 0);
 infected_std_devs = double.empty(length(str_x), 0);
 infected_means = double.empty(length(str_x), 0);
 
 count = 1;
-while str_x <= 1
+while str_x < 1
     
     num_infected_runs = double.empty(num_runs, 0);
     num_dead_runs = double.empty(num_runs, 0);
-    
-    str_x = str_x + 0.1;
-    str_y = 1 - str_x;
    
     for i = 1:1:num_runs
-        [num_infected_runs(i), num_dead_runs(i)] = simulation(str_x, str_y, 120, 100, 150);
+        [num_infected_runs(i), num_dead_runs(i)] = simulation(str_x, str_y, 140, 140, 80);
     end
     
-    infected_means(count) = mean(num_infected_runs) % mean number of infected people over num_runs with a str_x % vax alloaction to students and 1-str_x % vax allocation to elderly
-    infected_std_devs(count) = std(num_infected_runs) % std dev. of num infected people over num_runs under str_x%, 1-str_x% vax allocation to students,elders respectively
+    infected_means(count) = mean(num_infected_runs); % mean number of infected people over num_runs with a str_x % vax alloaction to students and 1-str_x % vax allocation to elderly
+    infected_std_devs(count) = std(num_infected_runs); % std dev. of num infected people over num_runs under str_x%, 1-str_x% vax allocation to students,elders respectively
     
     dead_means(count) = mean(num_dead_runs);
     dead_std_devs(count) = std(num_dead_runs);
+    
+    str_x = str_x + 0.1
+    str_y = 1 - str_x
     count = count + 1;
 end
 
@@ -133,7 +133,7 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
     end
 
 
-    p1 = makepoint(patient_zero_x, patient_zero_y, randi([7 10000]));
+    p1 = makepoint(patient_zero_x, patient_zero_y, randi([7 14]));
     InfecPpl = [p1];      % initialize a structure array for infected ppl (list of anyone infected at any time during flu season)
 
     %%% Start Simulation
@@ -169,11 +169,12 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
             
             cur_x = InfecPpl(e).x;
             cur_y = InfecPpl(e).y;
-            
-            InfecPpl(e).t = InfecPpl(e).t - 1;
-            if InfecPpl(e).t <= 0       % amount of time needed to recovery passed
+            % amount of time needed to be in recovery state
+            if InfecPpl(e).t > 0
+                InfecPpl(e).t = InfecPpl(e).t - 1;
+            else      
                 A(cur_x, cur_y) = 3;    % person is no longer in infected state and in recovered state     
-                continue
+                continue % continue to next loop iteration since person can not infect anyone else now
             end
             
             direc = rand;
@@ -190,7 +191,8 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
             end
             new_x = cur_x + delx;
             new_y = cur_y + dely;
-            new_t = InfecPpl(e).t - 1;
+            
+            rp = randi([7 14]); % recovery period (time it takes to recover)
             
             if A(new_x, new_y) == 1     % if susceptible
                 check = rand;
@@ -198,7 +200,7 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
                     if (check <= ifrstu) && (B(new_x,new_y)~=1)
                         A(new_x, new_y) = 2; % change person's state to infected
               
-                        InfecPpl(counter_n+1) = makepoint(new_x,new_y,new_t);
+                        InfecPpl(counter_n+1) = makepoint(new_x,new_y,rp);
                         if rand <= mrstu
                             num_dead = num_dead + 1;
                             A(new_x, new_y) = 4; % change person's state to dead
@@ -207,7 +209,7 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
                 elseif new_x>= 60 && new_y >=90 && new_y <= 140 && (B(new_x,new_y)~=1) % in downtown
                     if check <= ifrstu
                         A(new_x, new_y) = 2; % change person's state to infected
-                        InfecPpl(counter_n+1) = makepoint(new_x,new_y,new_t);
+                        InfecPpl(counter_n+1) = makepoint(new_x,new_y,rp);
                         if rand <= mrgeneral
                             num_dead = num_dead + 1;
                             A(new_x, new_y) = 4; % change person's state to dead
@@ -216,7 +218,7 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
                 elseif new_x >= 60 && new_y >=180 && new_y <= 220 && (B(new_x,new_y)~=1)
                     if check <= ifrstu
                         A(new_x, new_y) = 2; % change person's state to infected
-                        InfecPpl(counter_n+1) = makepoint(new_x,new_y,new_t);
+                        InfecPpl(counter_n+1) = makepoint(new_x,new_y,rp);
                         if rand <= mrstu
                             num_dead = num_dead + 1;
                             A(new_x, new_y) = 4; % change person's state to dead
@@ -225,7 +227,7 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
                 else
                     if check <= ifreld
                         A(new_x, new_y) = 2; % change person's state to infected
-                        InfecPpl(counter_n+1) = makepoint(new_x,new_y,new_t);
+                        InfecPpl(counter_n+1) = makepoint(new_x,new_y,rp);
                         if rand <= (0.55*mrgeneral + 0.45*mrold)
                             num_dead = num_dead + 1;
                             A(new_x, new_y) = 4; % change person's state to dead
