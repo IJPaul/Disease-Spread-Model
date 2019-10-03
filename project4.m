@@ -103,7 +103,6 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
     % Based on research, 21.5% of total ppl 
     num_elders = 0.215 * 244^2;
 
-
     % Infect rate for students & general population
     ifrstu = 0.3;
     ifreld = 0.1;
@@ -134,8 +133,8 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
     end
 
 
-    p1 = makepoint(patient_zero_x, patient_zero_y);
-    InfecPpl = [p1];      % initialize a structure array for infected ppl
+    p1 = makepoint(patient_zero_x, patient_zero_y, randi([7 10000]));
+    InfecPpl = [p1];      % initialize a structure array for infected ppl (list of anyone infected at any time during flu season)
 
     %%% Start Simulation
 
@@ -167,9 +166,17 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
         n = length(InfecPpl);
         counter_n = n;
         for e = 1:1:n
-            direc = rand;
+            
             cur_x = InfecPpl(e).x;
             cur_y = InfecPpl(e).y;
+            
+            InfecPpl(e).t = InfecPpl(e).t - 1;
+            if InfecPpl(e).t <= 0       % amount of time needed to recovery passed
+                A(cur_x, cur_y) = 3;    % person is no longer in infected state and in recovered state     
+                continue
+            end
+            
+            direc = rand;
             delx = 0;
             dely = 0;
             if direc <= 0.25            % up
@@ -183,13 +190,15 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
             end
             new_x = cur_x + delx;
             new_y = cur_y + dely;
-
+            new_t = InfecPpl(e).t - 1;
+            
             if A(new_x, new_y) == 1     % if susceptible
                 check = rand;
                 if new_x >= 110 && new_y >= 90  % in school region
                     if (check <= ifrstu) && (B(new_x,new_y)~=1)
                         A(new_x, new_y) = 2; % change person's state to infected
-                        InfecPpl(counter_n+1) = makepoint(new_x,new_y);
+              
+                        InfecPpl(counter_n+1) = makepoint(new_x,new_y,new_t);
                         if rand <= mrstu
                             num_dead = num_dead + 1;
                             A(new_x, new_y) = 4; % change person's state to dead
@@ -198,7 +207,7 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
                 elseif new_x>= 60 && new_y >=90 && new_y <= 140 && (B(new_x,new_y)~=1) % in downtown
                     if check <= ifrstu
                         A(new_x, new_y) = 2; % change person's state to infected
-                        InfecPpl(counter_n+1) = makepoint(new_x,new_y);
+                        InfecPpl(counter_n+1) = makepoint(new_x,new_y,new_t);
                         if rand <= mrgeneral
                             num_dead = num_dead + 1;
                             A(new_x, new_y) = 4; % change person's state to dead
@@ -207,7 +216,7 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
                 elseif new_x >= 60 && new_y >=180 && new_y <= 220 && (B(new_x,new_y)~=1)
                     if check <= ifrstu
                         A(new_x, new_y) = 2; % change person's state to infected
-                        InfecPpl(counter_n+1) = makepoint(new_x,new_y);
+                        InfecPpl(counter_n+1) = makepoint(new_x,new_y,new_t);
                         if rand <= mrstu
                             num_dead = num_dead + 1;
                             A(new_x, new_y) = 4; % change person's state to dead
@@ -216,7 +225,7 @@ function [infected, dead] = simulation(str_x, str_y, patient_zero_x, patient_zer
                 else
                     if check <= ifreld
                         A(new_x, new_y) = 2; % change person's state to infected
-                        InfecPpl(counter_n+1) = makepoint(new_x,new_y);
+                        InfecPpl(counter_n+1) = makepoint(new_x,new_y,new_t);
                         if rand <= (0.55*mrgeneral + 0.45*mrold)
                             num_dead = num_dead + 1;
                             A(new_x, new_y) = 4; % change person's state to dead
